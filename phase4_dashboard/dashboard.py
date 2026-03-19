@@ -1,14 +1,5 @@
 """
-EarthMender AI — Phase 4: Analytics Dashboard
-===============================================
-Three-level intelligence system:
-
-  Level 1 — Operational        : Live KPIs, waste breakdown, hotspots
-  Level 2 — Trends & Intel     : Monthly history, recurrence, type trends
-  Level 3 — Data Export        : CSV + JSON for NGOs and data partners
-
-Final 5-class system:
-    plastic_bottle | water_sachet | polythene_bag | disposable | waste_container
+EarthMender AI — Phase 4: Analytics Dashboard (Dark Final)
 """
 
 import streamlit as st
@@ -16,7 +7,6 @@ from datetime import datetime
 from collections import defaultdict
 import json
 
-# Human-readable labels for all 5 classes
 LABEL_MAP = {
     "plastic_bottle":  "🍶 Plastic Bottle",
     "water_sachet":    "💧 Water Sachet",
@@ -25,424 +15,376 @@ LABEL_MAP = {
     "waste_container": "🛢️ Waste Container",
 }
 
+DASH_CSS = """
+<style>
+.dsh{background:#080f0a;padding:0 14px 20px}
+.dsh-title{font-size:15px;font-weight:900;color:#eee;
+  font-family:'Inter',sans-serif;letter-spacing:-0.2px}
+.dsh-sub{font-size:11px;color:#444;margin-top:3px;font-family:'Inter',sans-serif}
+.dsh-kgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:14px}
+.dsh-k{background:#111c14;border-radius:12px;padding:13px;
+  border:0.5px solid rgba(255,255,255,0.05);text-align:center}
+.dsh-kv{font-size:22px;font-weight:900;color:#eee;font-family:'Inter',sans-serif}
+.dsh-kl{font-size:9px;color:#444;margin-top:4px;text-transform:uppercase;
+  letter-spacing:0.6px;font-family:'Inter',sans-serif}
+.dsh-sh{font-size:13px;font-weight:800;color:#ddd;
+  font-family:'Inter',sans-serif;margin:14px 0 10px;letter-spacing:-0.1px}
+.dsh-bar-row{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.dsh-bar-lbl{font-size:11px;color:#888;font-family:'Inter',sans-serif;
+  min-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dsh-bar-tr{flex:1;background:rgba(255,255,255,0.06);border-radius:3px;height:5px}
+.dsh-bar-fi{height:5px;border-radius:3px;background:#4caf50}
+.dsh-bar-n{font-size:10px;color:#444;min-width:24px;text-align:right;
+  font-family:'Inter',sans-serif}
+.dsh-sg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.dsh-sc{border-radius:11px;padding:13px 6px;text-align:center;border:0.5px solid}
+.dsh-sv{font-size:22px;font-weight:900;font-family:'Inter',sans-serif}
+.dsh-sl{font-size:9px;margin-top:3px;text-transform:uppercase;
+  letter-spacing:0.5px;font-family:'Inter',sans-serif}
+.dsh-pr{display:flex;align-items:center;gap:8px;margin:5px 0}
+.dsh-pl{font-size:11px;color:#888;font-family:'Inter',sans-serif;min-width:90px}
+.dsh-pt{flex:1;background:rgba(255,255,255,0.06);border-radius:3px;height:7px;overflow:hidden}
+.dsh-pf{height:7px;border-radius:3px;transition:width 0.3s}
+.dsh-rz{border-left:3px solid;padding:11px 13px;border-radius:10px;margin-bottom:9px}
+.dsh-rzt{font-size:12px;font-weight:700;color:#eee;font-family:'Inter',sans-serif}
+.dsh-rzm{font-size:10px;color:#777;margin-top:3px;font-family:'Inter',sans-serif}
+.dsh-tr{background:#111c14;border-radius:11px;padding:13px 14px;
+  margin-bottom:7px;display:flex;align-items:center;
+  justify-content:space-between;border:0.5px solid rgba(255,255,255,0.04)}
+.dsh-trl{font-size:12px;font-weight:700;color:#eee;font-family:'Inter',sans-serif}
+.dsh-trs{font-size:10px;color:#444;margin-top:2px;font-family:'Inter',sans-serif}
+</style>
+"""
 
-# ─── LEVEL 1: OPERATIONAL ─────────────────────────────────────────────────────
 
-def render_stats_row(stats: dict):
-    c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("📋 Total Reports",  stats.get("total",    0))
-    c2.metric("🟠 Open Cases",     stats.get("open",     0))
-    c3.metric("✅ Resolved",        stats.get("resolved", 0))
-    c4.metric("🗑️ Items Detected", stats.get("items",    0))
+# ── LEVEL 1 ───────────────────────────────────────────────────────────────────
+
+def render_stats_row(stats):
     total = stats.get("total", 0)
     res   = stats.get("resolved", 0)
-    rate  = f"{int(res / total * 100)}%" if total > 0 else "0%"
-    c5.metric("📈 Resolution Rate", rate)
+    rate  = f"{int(res/total*100)}%" if total > 0 else "0%"
+    st.markdown(DASH_CSS, unsafe_allow_html=True)
+    st.markdown(f"""
+    <div class="dsh-kgrid">
+      <div class="dsh-k">
+        <div class="dsh-kv">{stats.get('total',0)}</div>
+        <div class="dsh-kl">📋 Total</div>
+      </div>
+      <div class="dsh-k">
+        <div class="dsh-kv" style="color:#ffb74d;">{stats.get('open',0)}</div>
+        <div class="dsh-kl">🟠 Open</div>
+      </div>
+      <div class="dsh-k">
+        <div class="dsh-kv" style="color:#81c784;">{stats.get('resolved',0)}</div>
+        <div class="dsh-kl">✅ Resolved</div>
+      </div>
+      <div class="dsh-k">
+        <div class="dsh-kv">{rate}</div>
+        <div class="dsh-kl">📈 Rate</div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 
-def render_waste_breakdown(stats: dict):
+def render_waste_breakdown(stats):
     types = stats.get("types", {})
     if not types:
         st.info("No detection data yet.")
         return
-
-    st.subheader("🛍️ Waste Type Breakdown")
+    st.markdown('<div class="dsh-sh">🛍️ Waste Breakdown</div>', unsafe_allow_html=True)
     total = sum(types.values()) or 1
-    for waste_type, count in sorted(types.items(), key=lambda x: -x[1]):
-        label   = LABEL_MAP.get(waste_type, waste_type)
-        percent = count / total
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            st.progress(percent, text=label)
-        with col2:
-            st.write(f"**{count}** reports")
+    for wt, count in sorted(types.items(), key=lambda x: -x[1]):
+        lbl = LABEL_MAP.get(wt, wt)
+        pct = count / total * 100
+        st.markdown(f"""
+        <div class="dsh-bar-row">
+          <div class="dsh-bar-lbl">{lbl}</div>
+          <div class="dsh-bar-tr">
+            <div class="dsh-bar-fi" style="width:{pct:.0f}%;"></div>
+          </div>
+          <div class="dsh-bar-n">{count}</div>
+        </div>""", unsafe_allow_html=True)
 
 
-def render_severity_chart(stats: dict):
+def render_severity_chart(stats):
     severity = stats.get("severity", {})
     if not any(severity.values()):
         return
-
-    st.subheader("⚠️ Severity Distribution")
-    cols = st.columns(3)
-    config = [
-        ("LOW",    "🟢", "#4caf50"),
-        ("MEDIUM", "🟡", "#ff9800"),
-        ("HIGH",   "🔴", "#f44336"),
-    ]
-    for i, (level, icon, color) in enumerate(config):
-        with cols[i]:
-            count = severity.get(level, 0)
-            st.markdown(
-                f"<div style='text-align:center;padding:16px;"
-                f"background:{color}22;border-radius:10px;"
-                f"border:2px solid {color};'>"
-                f"<div style='font-size:28px;'>{icon}</div>"
-                f"<div style='font-size:24px;font-weight:bold;color:{color};'>{count}</div>"
-                f"<div style='font-size:13px;color:#555;'>{level}</div>"
-                f"</div>",
-                unsafe_allow_html=True,
-            )
+    st.markdown('<div class="dsh-sh">⚠️ Severity</div>', unsafe_allow_html=True)
+    cfg = [("LOW","#4caf50","rgba(76,175,80,0.1)"),
+           ("MEDIUM","#ff9800","rgba(255,152,0,0.1)"),
+           ("HIGH","#f44336","rgba(244,67,54,0.1)")]
+    cards = ""
+    for lv, col, bg in cfg:
+        cnt = severity.get(lv, 0)
+        cards += (f'<div class="dsh-sc" '
+                  f'style="background:{bg};border-color:{col}35;">'
+                  f'<div class="dsh-sv" style="color:{col};">{cnt}</div>'
+                  f'<div class="dsh-sl" style="color:{col}80;">{lv}</div>'
+                  f'</div>')
+    st.markdown(f'<div class="dsh-sg">{cards}</div>', unsafe_allow_html=True)
 
 
-def render_open_vs_resolved(stats: dict):
-    total    = stats.get("total", 0)
-    open_c   = stats.get("open", 0)
-    resolved = stats.get("resolved", 0)
+def render_open_vs_resolved(stats):
+    total = stats.get("total", 0)
     if total == 0:
         return
+    oc = stats.get("open", 0)
+    rc = stats.get("resolved", 0)
+    st.markdown('<div class="dsh-sh">📊 Open vs Resolved</div>', unsafe_allow_html=True)
+    st.markdown(f"""
+    <div class="dsh-pr">
+      <div class="dsh-pl" style="color:#ffb74d;">Open {oc}</div>
+      <div class="dsh-pt">
+        <div class="dsh-pf" style="width:{oc/total*100:.0f}%;background:#ff9800;"></div>
+      </div>
+    </div>
+    <div class="dsh-pr">
+      <div class="dsh-pl" style="color:#81c784;">Resolved {rc}</div>
+      <div class="dsh-pt">
+        <div class="dsh-pf" style="width:{rc/total*100:.0f}%;background:#4caf50;"></div>
+      </div>
+    </div>""", unsafe_allow_html=True)
 
-    st.subheader("📊 Open vs Resolved")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.progress(open_c / total,   text=f"🟠 Open: {open_c}")
-    with col2:
-        st.progress(resolved / total, text=f"✅ Resolved: {resolved}")
 
-
-def render_hotspot_table(hotspots: list):
+def render_hotspot_table(hotspots):
     if not hotspots:
         st.info("No active hotspot data yet.")
         return
-
-    st.subheader("🔥 Top Active Hotspots")
-    st.caption("Areas with highest density of open reports (~1km grid)")
-    rows = []
-    for i, h in enumerate(hotspots, 1):
-        rows.append({
-            "Rank":         f"#{i}",
-            "Location":     f"{h['lat']:.3f}, {h['lon']:.3f}",
-            "Open Reports":  h["count"],
-            "Items Found":   h["items"],
-        })
+    st.markdown('<div class="dsh-sh">🔥 Top Hotspots</div>', unsafe_allow_html=True)
+    rows = [{"Rank": f"#{i}", "Location": f"{h['lat']:.3f}, {h['lon']:.3f}",
+             "Reports": h["count"], "Items": h["items"]}
+            for i, h in enumerate(hotspots, 1)]
     st.table(rows)
 
 
-def render_recent_reports(reports: list, n: int = 5):
+def render_recent_reports(reports, n=5):
     if not reports:
-        st.info("No reports submitted yet.")
+        st.info("No reports yet.")
         return
-
-    st.subheader("🕐 Recent Reports")
-    recent = sorted(reports, key=lambda x: x.get("timestamp", ""), reverse=True)[:n]
-
+    st.markdown('<div class="dsh-sh">🕐 Recent Reports</div>', unsafe_allow_html=True)
+    recent = sorted(reports, key=lambda x: x.get("timestamp",""), reverse=True)[:n]
     for r in recent:
-        severity = r.get("severity", "LOW")
-        status   = r.get("status",   "OPEN")
-        sev_icon = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}.get(severity, "🟢")
-        sta_icon = "🟠" if status == "OPEN" else "✅"
-        types    = ", ".join(LABEL_MAP.get(t, t) for t in r.get("waste_types", []))
-
-        with st.expander(
-            f"{sev_icon} {sta_icon} Case #{r.get('id','')} — "
-            f"{types} — {r.get('date','')} {r.get('time','')}"
-        ):
-            col1, col2 = st.columns(2)
-            with col1:
-                st.write(f"**Waste:** {types}")
-                st.write(f"**Items:** {r.get('item_count', 0)}")
-                st.write(f"**Severity:** {severity}")
-                st.write(f"**Status:** {status}")
-            with col2:
-                st.write(f"**GPS:** {r.get('latitude', 0):.4f}, "
-                         f"{r.get('longitude', 0):.4f}")
-                st.write(f"**Date:** {r.get('date','')} at {r.get('time','')}")
-                if r.get("description"):
-                    st.write(f"**Location:** {r['description']}")
-                if status == "RESOLVED":
-                    st.write(f"**Resolved by:** {r.get('resolved_by', '')}")
+        sev  = r.get("severity","LOW")
+        sta  = r.get("status","OPEN")
+        si   = {"HIGH":"🔴","MEDIUM":"🟡","LOW":"🟢"}.get(sev,"🟢")
+        xi   = "🟠" if sta=="OPEN" else "✅"
+        typs = ", ".join(LABEL_MAP.get(t,t) for t in r.get("waste_types",[]))
+        with st.expander(f"{si} {xi} #{r.get('id','')} — {typs} — {r.get('date','')}"):
+            c1,c2 = st.columns(2)
+            with c1:
+                st.write(f"**Waste:** {typs}")
+                st.write(f"**Items:** {r.get('item_count',0)}")
+            with c2:
+                st.write(f"**GPS:** {r.get('latitude',0):.4f},{r.get('longitude',0):.4f}")
+                st.write(f"**{r.get('date','')} {r.get('time','')}**")
 
 
-# ─── LEVEL 2: TREND INTELLIGENCE ──────────────────────────────────────────────
+# ── LEVEL 2 ───────────────────────────────────────────────────────────────────
 
-def _compute_monthly_trends(reports: list):
-    """ALL reports by month — open + resolved. Data never disappears."""
-    monthly = defaultdict(lambda: {"reported": 0, "resolved": 0})
+def _monthly(reports):
+    m = defaultdict(lambda: {"reported":0,"resolved":0})
     for r in reports:
-        month = r.get("date", "")[:7]
-        if month:
-            monthly[month]["reported"] += 1
+        mo = r.get("date","")[:7]
+        if mo:
+            m[mo]["reported"] += 1
             if r.get("status") == "RESOLVED":
-                monthly[month]["resolved"] += 1
-    return dict(sorted(monthly.items()))
+                m[mo]["resolved"] += 1
+    return dict(sorted(m.items()))
 
 
-def _compute_recurrence(reports: list):
-    """Zones reported multiple times — includes both open and resolved."""
-    grid = defaultdict(list)
+def _recurrence(reports):
+    g = defaultdict(list)
     for r in reports:
-        key = (round(r["latitude"], 2), round(r["longitude"], 2))
-        grid[key].append(r)
-
-    recurrent = []
-    for (lat, lon), zone_reports in grid.items():
-        resolved_count = sum(1 for r in zone_reports if r.get("status") == "RESOLVED")
-        open_count     = sum(1 for r in zone_reports if r.get("status") == "OPEN")
-        total          = len(zone_reports)
-        if total >= 2:
-            recurrent.append({
-                "lat":              lat,
-                "lon":              lon,
-                "total":            total,
-                "resolved":         resolved_count,
-                "open":             open_count,
-                "recurrence_score": round(total / max(resolved_count, 1), 1),
-            })
-    return sorted(recurrent, key=lambda x: -x["recurrence_score"])
+        g[(round(r["latitude"],2),round(r["longitude"],2))].append(r)
+    out = []
+    for (lat,lon),zr in g.items():
+        rc = sum(1 for r in zr if r.get("status")=="RESOLVED")
+        oc = sum(1 for r in zr if r.get("status")=="OPEN")
+        t  = len(zr)
+        if t >= 2:
+            out.append({"lat":lat,"lon":lon,"total":t,
+                        "resolved":rc,"open":oc,
+                        "score":round(t/max(rc,1),1)})
+    return sorted(out, key=lambda x:-x["score"])
 
 
-def _compute_waste_type_trends(reports: list):
-    """Monthly count per waste type."""
-    trends = defaultdict(lambda: defaultdict(int))
+def _trends(reports):
+    tr = defaultdict(lambda: defaultdict(int))
     for r in reports:
-        month = r.get("date", "")[:7]
-        for wtype in r.get("waste_types", []):
-            if month:
-                trends[wtype][month] += 1
-    return {k: dict(v) for k, v in trends.items()}
+        mo = r.get("date","")[:7]
+        for wt in r.get("waste_types",[]):
+            if mo: tr[wt][mo] += 1
+    return {k:dict(v) for k,v in tr.items()}
 
 
-def render_historical_trends(reports: list):
+def render_historical_trends(reports):
     if not reports:
         st.info("No historical data yet.")
         return
-
-    st.subheader("📅 Monthly Report Volume")
-    st.caption(
-        "All reports — open AND resolved. Resolved cases still count here. "
-        "This is your permanent environmental record."
-    )
-
-    monthly = _compute_monthly_trends(reports)
+    st.markdown('<div class="dsh-sh">📅 Monthly Volume</div>', unsafe_allow_html=True)
+    st.caption("All reports including resolved — data never disappears.")
+    monthly = _monthly(reports)
     if not monthly:
         return
-
-    max_val = max((v["reported"] for v in monthly.values()), default=1) or 1
-
-    for month, data in monthly.items():
-        r_count  = data["reported"]
-        v_count  = data["resolved"]
-        res_rate = int(v_count / r_count * 100) if r_count > 0 else 0
-        color    = "green" if res_rate >= 70 else "orange" if res_rate >= 40 else "red"
-
-        col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
-        with col1:
-            st.write(f"**{month}**")
-        with col2:
-            st.progress(min(r_count / max_val, 1.0), text=f"📋 {r_count} reported")
-        with col3:
-            st.progress(min(v_count / max_val, 1.0), text=f"✅ {v_count} resolved")
-        with col4:
-            st.markdown(
-                f"<span style='color:{color};font-weight:bold;font-size:15px;'>"
-                f"{res_rate}%</span>",
-                unsafe_allow_html=True,
-            )
+    mx = max((v["reported"] for v in monthly.values()), default=1) or 1
+    for mo, d in monthly.items():
+        rc = d["reported"]; vc = d["resolved"]
+        rr = int(vc/rc*100) if rc > 0 else 0
+        col= "#4caf50" if rr>=70 else "#ff9800" if rr>=40 else "#f44336"
+        c1,c2,c3,c4 = st.columns([2,2,2,1])
+        with c1: st.write(f"**{mo}**")
+        with c2: st.progress(min(rc/mx,1.0), text=f"📋 {rc}")
+        with c3: st.progress(min(vc/mx,1.0), text=f"✅ {vc}")
+        with c4: st.markdown(f"<span style='color:{col};font-weight:800;'>"
+                             f"{rr}%</span>", unsafe_allow_html=True)
 
 
-def render_recurrence_analysis(reports: list):
-    st.subheader("🔁 Recurrence Analysis")
-    st.caption(
-        "Locations reported multiple times — even after resolution. "
-        "High recurrence = root cause not addressed. Key metric for NGOs."
-    )
-
-    recurrent = _compute_recurrence(reports)
-    if not recurrent:
-        st.info("Not enough data yet. Recurrence patterns appear as more reports come in.")
+def render_recurrence_analysis(reports):
+    st.markdown('<div class="dsh-sh">🔁 Recurrence</div>', unsafe_allow_html=True)
+    st.caption("Zones reported multiple times — high = systemic issue.")
+    rec = _recurrence(reports)
+    if not rec:
+        st.info("Not enough data yet.")
         return
-
-    for i, zone in enumerate(recurrent[:6], 1):
-        score = zone["recurrence_score"]
-        color = "#f44336" if score >= 3 else "#ff9800" if score >= 2 else "#4caf50"
-        label = "🔴 High Risk" if score >= 3 else "🟡 Medium Risk" if score >= 2 else "🟢 Low Risk"
-        osm   = (f"https://www.openstreetmap.org/"
-                 f"?mlat={zone['lat']}&mlon={zone['lon']}&zoom=16")
-
-        st.markdown(
-            f"<div style='border-left:4px solid {color};padding:12px 16px;"
-            f"background:{color}11;border-radius:6px;margin-bottom:10px;'>"
-            f"<b>Zone #{i}</b> — {zone['lat']:.3f}, {zone['lon']:.3f} &nbsp;"
-            f"<a href='{osm}' target='_blank' style='font-size:12px;'>📍 Map</a><br>"
-            f"Total: <b>{zone['total']}</b> &nbsp;|&nbsp; "
-            f"Resolved: <b>{zone['resolved']}</b> &nbsp;|&nbsp; "
-            f"Open: <b>{zone['open']}</b><br>"
-            f"Recurrence risk: <b style='color:{color};'>{label}</b> (score: {score})"
-            f"</div>",
-            unsafe_allow_html=True,
-        )
+    for i, z in enumerate(rec[:5],1):
+        sc  = z["score"]
+        col = "#f44336" if sc>=3 else "#ff9800" if sc>=2 else "#4caf50"
+        rsk = "🔴 High" if sc>=3 else "🟡 Medium" if sc>=2 else "🟢 Low"
+        osm = f"https://www.openstreetmap.org/?mlat={z['lat']}&mlon={z['lon']}&zoom=16"
+        st.markdown(f"""
+        <div class="dsh-rz" style="border-color:{col};background:{col}0c;">
+          <div class="dsh-rzt">Zone #{i} — {z['lat']:.3f},{z['lon']:.3f}
+            &nbsp;<a href="{osm}" target="_blank"
+            style="font-size:10px;color:#4caf50;">📍</a>
+          </div>
+          <div class="dsh-rzm">
+            Reports: {z['total']} · Resolved: {z['resolved']} ·
+            Open: {z['open']} ·
+            <span style="color:{col};font-weight:800;">{rsk}</span>
+          </div>
+        </div>""", unsafe_allow_html=True)
 
 
-def render_waste_type_trend(reports: list):
-    st.subheader("📈 Waste Type Trends")
-    st.caption("Which waste types are rising? Use this to prioritise campaigns.")
-
-    trends = _compute_waste_type_trends(reports)
-    if not trends:
+def render_waste_type_trend(reports):
+    st.markdown('<div class="dsh-sh">📈 Waste Trends</div>', unsafe_allow_html=True)
+    st.caption("Rising types = where campaigns should focus.")
+    tr = _trends(reports)
+    if not tr:
         st.info("No trend data yet.")
         return
-
-    for wtype, monthly_counts in sorted(trends.items()):
-        if not monthly_counts:
-            continue
-        label  = LABEL_MAP.get(wtype, wtype)
-        months = sorted(monthly_counts.keys())
-        counts = [monthly_counts[m] for m in months]
+    for wt, mc in sorted(tr.items()):
+        if not mc: continue
+        lbl    = LABEL_MAP.get(wt, wt)
+        months = sorted(mc.keys())
+        counts = [mc[m] for m in months]
         latest = counts[-1] if counts else 0
-        prev   = counts[-2] if len(counts) >= 2 else counts[0]
+        prev   = counts[-2] if len(counts)>=2 else counts[0]
         delta  = latest - prev
-        arrow  = "⬆️" if delta > 0 else "⬇️" if delta < 0 else "➡️"
-        d_color= "red" if delta > 0 else "green" if delta < 0 else "gray"
-
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            st.write(f"**{label}** — {sum(counts)} total")
-            for m, c in zip(months, counts):
-                st.caption(f"{m}: {c} report(s)")
-        with col2:
-            st.markdown(
-                f"<div style='text-align:center;padding:12px;"
-                f"border-radius:8px;background:#f9f9f9;'>"
-                f"<div style='font-size:22px;'>{arrow}</div>"
-                f"<div style='font-size:12px;color:{d_color};'>"
-                f"{'▲' if delta > 0 else '▼' if delta < 0 else '—'}"
-                f" {abs(delta)} vs prev month</div>"
-                f"</div>",
-                unsafe_allow_html=True,
-            )
-        st.write("")
+        arrow  = "⬆️" if delta>0 else "⬇️" if delta<0 else "➡️"
+        dcol   = "#f44336" if delta>0 else "#4caf50" if delta<0 else "#666"
+        st.markdown(f"""
+        <div class="dsh-tr">
+          <div>
+            <div class="dsh-trl">{lbl}</div>
+            <div class="dsh-trs">{sum(counts)} total · {months[-1]}</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:18px;">{arrow}</div>
+            <div style="font-size:10px;color:{dcol};font-family:'Inter',sans-serif;
+                 font-weight:800;">
+              {'▲' if delta>0 else '▼' if delta<0 else '—'}{abs(delta)}
+            </div>
+          </div>
+        </div>""", unsafe_allow_html=True)
 
 
-# ─── LEVEL 3: DATA EXPORT ─────────────────────────────────────────────────────
+# ── LEVEL 3 ───────────────────────────────────────────────────────────────────
 
-def render_data_export(reports: list):
-    st.subheader("📤 Export Environmental Dataset")
-    st.caption(
-        "Full anonymised waste report log — for NGO impact reports, "
-        "academic research, and environmental data partnerships."
-    )
-
+def render_data_export(reports):
+    st.markdown('<div class="dsh-sh">📤 Export Dataset</div>', unsafe_allow_html=True)
+    st.caption("Anonymised log for NGO reports, research and data partnerships.")
     if not reports:
         st.info("No data to export yet.")
         return
-
-    dates = [r.get("date", "") for r in reports if r.get("date")]
-    col1, col2, col3 = st.columns(3)
-    col1.metric("📋 Records", len(reports))
-    col2.metric("📍 Unique Zones",
-                len({(round(r["latitude"], 2), round(r["longitude"], 2))
-                     for r in reports}))
-    col3.metric("🗓️ Date Range",
-                f"{min(dates)} → {max(dates)}" if dates else "—")
-
+    dates = [r.get("date","") for r in reports if r.get("date")]
+    c1,c2,c3 = st.columns(3)
+    c1.metric("Records",      len(reports))
+    c2.metric("Unique Zones",
+              len({(round(r["latitude"],2),round(r["longitude"],2)) for r in reports}))
+    c3.metric("Range",
+              f"{min(dates)[:7]}→{max(dates)[:7]}" if dates else "—")
     st.write("")
-
-    lines = [
-        "report_id,date,time,latitude,longitude,waste_types,"
-        "item_count,severity,status,resolved_date,description"
-    ]
-    for r in sorted(reports, key=lambda x: x.get("timestamp", "")):
-        waste_types   = "|".join(r.get("waste_types", []))
-        resolved_date = (r.get("resolved_at") or "")[:10]
-        description   = r.get("description", "").replace(",", ";")
+    lines = ["report_id,date,time,latitude,longitude,waste_types,"
+             "item_count,severity,status,resolved_date,description"]
+    for r in sorted(reports, key=lambda x: x.get("timestamp","")):
         lines.append(
             f"{r.get('id','')},{r.get('date','')},{r.get('time','')},"
-            f"{r.get('latitude', 0):.6f},{r.get('longitude', 0):.6f},"
-            f"{waste_types},{r.get('item_count', 0)},"
-            f"{r.get('severity','')},"
+            f"{r.get('latitude',0):.6f},{r.get('longitude',0):.6f},"
+            f"{'|'.join(r.get('waste_types',[]))},"
+            f"{r.get('item_count',0)},{r.get('severity','')},"
             f"{r.get('status','')},"
-            f"{resolved_date},"
-            f"{description}"
-        )
-
-    st.download_button(
-        label="⬇️ Download Full Dataset (CSV)",
+            f"{(r.get('resolved_at') or '')[:10]},"
+            f"{r.get('description','').replace(',',';')}")
+    st.download_button("⬇️ Download CSV",
         data="\n".join(lines),
-        file_name=f"earthmender_waste_data_{datetime.now().strftime('%Y%m%d')}.csv",
-        mime="text/csv",
-        use_container_width=True,
-    )
-
+        file_name=f"earthmender_{datetime.now().strftime('%Y%m%d')}.csv",
+        mime="text/csv", use_container_width=True)
     summary = {
-        "exported_at":    datetime.now().isoformat(),
-        "total_reports":  len(reports),
-        "open_cases":     sum(1 for r in reports if r.get("status") == "OPEN"),
-        "resolved_cases": sum(1 for r in reports if r.get("status") == "RESOLVED"),
+        "exported_at": datetime.now().isoformat(),
+        "total_reports": len(reports),
+        "open_cases": sum(1 for r in reports if r.get("status")=="OPEN"),
+        "resolved_cases": sum(1 for r in reports if r.get("status")=="RESOLVED"),
         "waste_type_totals": {},
-        "date_range": {
-            "from": min(dates, default=""),
-            "to":   max(dates, default=""),
-        },
+        "date_range": {"from": min(dates,default=""), "to": max(dates,default="")},
     }
     for r in reports:
-        for wt in r.get("waste_types", []):
-            summary["waste_type_totals"][wt] = \
-                summary["waste_type_totals"].get(wt, 0) + 1
-
-    st.download_button(
-        label="⬇️ Download Summary Statistics (JSON)",
-        data=json.dumps(summary, indent=2),
+        for wt in r.get("waste_types",[]):
+            summary["waste_type_totals"][wt] = summary["waste_type_totals"].get(wt,0)+1
+    st.download_button("⬇️ Download JSON",
+        data=json.dumps(summary,indent=2),
         file_name=f"earthmender_summary_{datetime.now().strftime('%Y%m%d')}.json",
-        mime="application/json",
-        use_container_width=True,
-    )
-
-    st.write("")
-    st.info(
-        "💡 **For NGOs & Partners:** Dataset includes all historical reports — "
-        "open and resolved. Use for funding proposals, impact measurement, "
-        "and identifying communities needing long-term intervention."
-    )
+        mime="application/json", use_container_width=True)
+    st.info("💡 For NGOs: includes all historical data — open and resolved.")
 
 
-# ─── MASTER RENDER ────────────────────────────────────────────────────────────
+# ── MASTER ────────────────────────────────────────────────────────────────────
 
-def render_full_dashboard(stats: dict, hotspots: list, reports: list):
-    """Master render — called from Dashboard tab in app.py."""
-    st.markdown("## 📊 Environmental Analytics Dashboard")
-    st.caption("Three-level intelligence: Operational · Trends · Data Export")
-    st.divider()
+def render_full_dashboard(stats, hotspots, reports):
+    st.markdown(DASH_CSS, unsafe_allow_html=True)
+    st.markdown('<div class="dsh">', unsafe_allow_html=True)
+    st.markdown("""
+    <div style="padding:14px 0 10px;">
+      <div style="font-size:15px;font-weight:900;color:#eee;
+           font-family:'Inter',sans-serif;letter-spacing:-0.2px;">
+        📊 Analytics Dashboard
+      </div>
+      <div style="font-size:11px;color:#444;margin-top:3px;
+           font-family:'Inter',sans-serif;">
+        Operational · Trends · Export
+      </div>
+    </div>""", unsafe_allow_html=True)
 
     render_stats_row(stats)
-    st.divider()
 
-    lvl1, lvl2, lvl3 = st.tabs([
-        "⚡ Level 1 — Operational",
-        "📅 Level 2 — Trends & Intelligence",
-        "📤 Level 3 — Data Export",
-    ])
+    lvl1, lvl2, lvl3 = st.tabs(["⚡ Operational", "📅 Trends", "📤 Export"])
 
     with lvl1:
-        st.caption("Live snapshot for daily operator and community use.")
         st.write("")
-        col1, col2 = st.columns(2)
-        with col1:
-            render_waste_breakdown(stats)
-        with col2:
-            render_severity_chart(stats)
-        st.divider()
+        render_waste_breakdown(stats)
+        render_severity_chart(stats)
         render_open_vs_resolved(stats)
-        st.divider()
         render_hotspot_table(hotspots)
-        st.divider()
         render_recent_reports(reports)
 
     with lvl2:
-        st.caption(
-            "Historical patterns — resolved cases still count here. "
-            "Data never disappears and grows in value over time."
-        )
         st.write("")
         render_historical_trends(reports)
-        st.divider()
         render_recurrence_analysis(reports)
-        st.divider()
         render_waste_type_trend(reports)
 
     with lvl3:
-        st.caption(
-            "Export anonymised datasets for NGO reports, research, "
-            "and environmental data products."
-        )
         st.write("")
         render_data_export(reports)
+
+    st.markdown("</div>", unsafe_allow_html=True)
