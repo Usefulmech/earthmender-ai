@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+venv/
+env/
+
+# Streamlit
+.streamlit/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Model files (IMPORTANT - too large)
+*.pt
+
+# JSON data (optional - avoid clutter)
+waste_reports.json
+
+# VS Code
+.vscode/
