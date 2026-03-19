@@ -103,7 +103,7 @@ class PlasticDetector:
             detections      (list of dicts)
         """
         img_array  = np.array(image)
-        results    = self.model(img_array, conf=self.confidence, verbose=False)[0]
+        results    = self.model(img_array, conf=self.confidence, verbose=False, imgsz=320)[0]
         detections = self._parse_results(results)
         annotated  = self._draw_boxes(img_array.copy(), detections)
         return Image.fromarray(annotated), detections
