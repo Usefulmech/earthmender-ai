@@ -1,10 +1,10 @@
 # EarthMender AI — Python Dependencies
 # Run: pip install -r requirements.txt
 
-ultralytics>=8.0.0          # YOLOv8 object detection
-opencv-python-headless>=4.8.0  # Headless OpenCV for Render (no display needed)
-Pillow>=10.0.0              # Image loading and handling
-streamlit>=1.32.0           # Web application framework
-streamlit-folium>=0.18.0    # Render Folium maps inside Streamlit
-folium>=0.15.0              # Interactive maps + heatmap plugin
-numpy>=1.24.0               # Array operations (used by OpenCV + YOLO)
+ultralytics>=8.0.0              # YOLOv8 object detection
+opencv-python-headless>=4.8.0  # Headless OpenCV — no libGL needed (works on Render native)
+Pillow>=10.0.0                  # Image loading and handling
+streamlit>=1.32.0               # Web application framework
+streamlit-folium>=0.18.0        # Render Folium maps inside Streamlit
+folium>=0.15.0                  # Interactive maps + heatmap plugin
+numpy>=1.24.0                   # Array operations
