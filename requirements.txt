@@ -2,7 +2,7 @@
 # Run: pip install -r requirements.txt
 
 ultralytics>=8.0.0          # YOLOv8 object detection
-opencv-python>=4.8.0        # Image and video frame processing
+opencv-python-headless>=4.8.0  # Headless OpenCV for Render (no display needed)
 Pillow>=10.0.0              # Image loading and handling
 streamlit>=1.32.0           # Web application framework
 streamlit-folium>=0.18.0    # Render Folium maps inside Streamlit
